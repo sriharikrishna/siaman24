@@ -16,7 +16,6 @@ https://meetings.siam.org/sess/dsp_programsess.cfm?SESSIONCODE=79866
 | Demo & Hands on: Scalar | [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sriharikrishna/siaman24/blob/main/scalar.ipynb)|
 | Demo & Hands on: Performance testing | [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sriharikrishna/siaman24/blob/main/perftest.ipynb)|
 | Memory requirements      | [Slides](https://github.com/sriharikrishna/siaman24/blob/main/slides/SIAMAN24_Memory.pdf)       |
-
 |  Know what you are differentiating      | [Slides](https://github.com/sriharikrishna/siaman24/blob/main/slides/SIAMAN24_Knowwhat.pdf)       |
 | Adding AD to existing code   | [Slides](https://github.com/sriharikrishna/siaman24/blob/main/slides/SIAMAN24_Large.pdf)         |
 | Demo & Hands on: Dot product test | [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sriharikrishna/siaman24/blob/main/rosenbrock_dot.ipynb)|
