@@ -7,12 +7,12 @@ https://meetings.siam.org/sess/dsp_programsess.cfm?SESSIONCODE=79866
 | Content      | Resources |
 | ----------- | ----------- |
 | Introduction      | [Slides](https://github.com/sriharikrishna/siaman24/blob/main/slides/SIAMAN24_Intro.pdf)       |
+| Demo & Hands on: Rosenbrock | [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sriharikrishna/siaman24/blob/main/rosenbrock.ipynb)|
 | Demo & Hands on: Derivative based optimization | [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sriharikrishna/siaman24/blob/main/stream_vel_nonlinearopt_w_jax.ipynb)|
 ## Further resources
 | Content      | Resources |
 | ----------- | ----------- |
 | Seed matrices   | [Slides](https://github.com/sriharikrishna/siaman24/blob/main/slides/SIAMAN24_Seeding.pdf)         |
-| Demo & Hands on: Rosenbrock | [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sriharikrishna/siaman24/blob/main/rosenbrock.ipynb)|
 | Demo & Hands on: Scalar | [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sriharikrishna/siaman24/blob/main/scalar.ipynb)|
 | Demo & Hands on: Performance testing | [![Open In Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sriharikrishna/siaman24/blob/main/perftest.ipynb)|
 | Memory requirements      | [Slides](https://github.com/sriharikrishna/siaman24/blob/main/slides/SIAMAN24_Memory.pdf)       |
