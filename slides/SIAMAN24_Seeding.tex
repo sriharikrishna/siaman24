@@ -1,0 +1,346 @@
+\documentclass[compact,12pt]{beamer}
+
+\newcommand{\prtl}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\violet}[1]{{\color{violet} #1}}
+\newcommand{\blue}[1]{{\color{blue} #1}}
+\newcommand{\green}[1]{{\color{green} #1}}
+
+%\usetheme{Madrid}
+% ---- to remove navigation icons at the slide bottom -----
+\mode<presentation>{
+  \setbeamertemplate{navigation symbols}{}
+}
+\definecolor{darkerred}{rgb}{0.7,0.0,0.0} % rouge plus sombre
+\setbeamercolor{alerted text}{fg=darkerred}
+\definecolor{fondtitre}{rgb}{0.20,0.43,0.09} % vert fonce
+\definecolor{coultitre}{rgb}{0.41,0.05,0.05} % marron
+\definecolor{indigo}{RGB}{79,0,93} % indigo fonc<E9> claire
+\setbeamercolor{structure}{fg=indigo_cl, bg=fondtitre!40}
+\usecolortheme[named=indigo]{structure}
+\setbeamercolor{block body alerted}{fg=white,bg=darkerred}
+
+\title[Seeds]{Seed Matrices}
+\author{Laurent Hasco\"{e}t  \\
+        Paul Hovland  \\
+        Jan  H\"{u}ckelheim \\
+        Sri Hari Krishna Narayanan
+}
+\date[AN 2024]{SIAM AN Student Days 2024}
+
+
+\begin{document}
+
+\begin{frame}
+\maketitle
+\begin{center}
+\includegraphics[width=0.3\textwidth]{images/inrialogo}
+\includegraphics[width=0.3\textwidth]{images/Argonne_cmyk_black.eps}
+\includegraphics[width=0.3\textwidth]{images/RGB_Color-Seal_Green-Mark_SC_Horizontal}
+\end{center}
+\end{frame}
+
+\section{intro session}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: Theory}
+Recall:\\
+Forward mode computes
+$$JS$$
+at cost proportional to number of columns in $S$.\\[0.5em]
+Reverse mode computes
+$$W^TJ$$
+at cost proportional to number of columns in $W$.
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: Practice}
+In reality, it is rarely that simple.
+\begin{itemize}
+    \item data structure pragmatics
+    \item multiple output variables
+    \item multiple input variables
+    \item Jacobian compression
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: data structure pragmatics}
+Depending on
+\begin{itemize}
+    \item programming language (row-major vs. column-major arrays)
+    \item choice of AD tool
+\end{itemize}
+the $J$, $S$, $W$ matrices might be stored in a transposed layout or as part of a struct and the derivative dimension might be flattened.\\[0.5em]
+
+Consequently, what is logically $\Dot{X_{ij}}$ might be stored as \texttt{dX(j,i)} or \texttt{x[i].grad[j]}.
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: multiple scalar outputs, scalar input}
+$\bullet$ Consider function \texttt{foo(in:x,out:f,out:g)}\\[0.5em]
+$\bullet$ Then, forward mode AD computes
+$$
+\Dot{f} = \prtl{f}{x}\Dot{x}\ \ \mbox{and}\ \ \Dot{g} = \prtl{g}{x}\Dot{x}
+$$
+$\bullet$ Initializing $\Dot{x} = 1$  yields the full (logical) Jacobian, split over two data structures.
+$$
+J = \left[ \begin{array}{c}
+     \Dot{f} \\
+     \Dot{g} 
+\end{array} \right]
+$$
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: multiple scalar outputs, vector input}
+$\bullet$ Consider function \texttt{foo(in:x(N),out:f,out:g)}\\
+$\bullet$ That is, $x$ is now a vector of length $N$.\\
+$\bullet$ Then, vector forward mode AD computes
+$$
+\Dot{f} = \prtl{f}{x}\Dot{x}\ \ \mbox{and}\ \ \Dot{g} = \prtl{g}{x}\Dot{x}
+$$
+$\bullet$ Initializing $\Dot{x}$ to the identity matrix yields the full Jacobian, at a cost proportional to $N$.\\
+$\bullet$ Alternatively, one could loop over $\Dot{x} = e_i$, computing one column of the Jacobian at a time.
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: multiple scalar outputs, vector input}
+$\bullet$ Consider function \texttt{foo(in:x(N),out:f,out:g)}\\[0.5em]
+$\bullet$ Then, reverse mode AD computes
+$$
+\overline{x} = \overline{f}\,\prtl{f}{x} + \overline{g}\,\prtl{g}{x}
+$$
+$\bullet$ Initializing $\overline{f} = 1$ and $\overline{g} = 0$ yields $\overline{x} = \prtl{f}{x}$\\
+$\bullet$ Initializing $\overline{f} = 0$ and $\overline{g} = 1$ yields $\overline{x} = \prtl{g}{x}$\\
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: multiple scalar outputs, vector input}
+$\bullet$ Initializing $\overline{f} = 1$ and $\overline{g} = 0$ yields $\overline{x} = \prtl{f}{x}$\\
+$\bullet$ Initializing $\overline{f} = 0$ and $\overline{g} = 1$ yields $\overline{x} = \prtl{g}{x}$\\
+$\bullet$ Thus, we are computing $W^TJ$ for each of 
+$$
+W = \left[ \begin{array}{c}
+     1  \\
+     0 
+\end{array}\right]\ \  \mbox{and}\ \ 
+W = \left[ \begin{array}{c}
+     0  \\
+     1 
+\end{array}\right]
+$$
+$\bullet$ In vector reverse mode, we can let  $\overline{f} = [1\ 0]$ and $\overline{g} = [0\ 1]$ and compute the full Jacobian all at once, using $W = I$.
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: multiple scalar inputs, scalar output}
+$\bullet$ Now, consider function \texttt{foo(in:x,in:y,out:f)}\\[0.5em]
+$\bullet$ Then, reverse mode AD computes
+$$
+\overline{x} = \overline{f}\,\prtl{f}{x}\ \ \mbox{and}\ \  \overline{y} = \overline{f}\,\prtl{f}{y}
+$$
+$\bullet$ Initializing $\overline{f} = 1$ yields the full Jacobian, or gradient, split over two data structures.
+$$
+J = \left[ \begin{array}{cc}
+     \overline{x} &
+     \overline{y} 
+\end{array} \right]
+$$
+\end{frame}
+
+
+\begin{frame}
+\large\frametitle{Seed Matrices: multiple scalar inputs, scalar output}
+$\bullet$ Consider function \texttt{foo(in:x,in:y,out:f)}\\[0.5em]
+$\bullet$ Then, forward mode AD computes
+$$
+\Dot{f} = \prtl{f}{x}\,\Dot{x} + \prtl{f}{y}\,\Dot{y}
+$$
+$\bullet$ Initializing $\Dot{x} = 1$ and $\Dot{y} = 0$ yields $\Dot{f} = \prtl{f}{x}$\\
+$\bullet$ Initializing $\Dot{x} = 0$ and $\Dot{y} = 1$ yields $\Dot{f} = \prtl{f}{y}$\\
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: multiple scalar inputs, scalar output}
+$\bullet$ Initializing $\Dot{x} = 1$ and $\Dot{y} = 0$ yields $\Dot{f} = \prtl{f}{x}$\\
+$\bullet$ Initializing $\Dot{x} = 0$ and $\Dot{y} = 1$ yields $\Dot{f} = \prtl{f}{y}$\\
+$\bullet$ Thus, we are computing $JS$ for each of 
+$$
+S = \left[ \begin{array}{c}
+     1  \\
+     0 
+\end{array}\right]\ \  \mbox{and}\ \ 
+S = \left[ \begin{array}{c}
+     0  \\
+     1 
+\end{array}\right].
+$$
+$\bullet$ In vector forward mode, we can let  $\Dot{x} = [1\ 0]$ and $\Dot{y} = [0\ 1]$ and compute the full Jacobian all at once, using $S = I$.
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: multiple vector inputs}
+$\bullet$ Consider \texttt{foo(in:x(3),in:y(3),out:f)}\\[0.5em]
+$\bullet$ Then, to compute the full Jacobian using vector forward mode AD, we must initialize
+$$
+\Dot{x} = \left[ \begin{array}{cccccc}
+     1 & 0 & 0 & 0 & 0 & 0\\
+     0 & 1 & 0 & 0 & 0 & 0\\
+     0 & 0 & 1 & 0 & 0 & 0\\
+\end{array}\right]
+$$ and
+$$
+\Dot{y} = \left[ \begin{array}{cccccc}
+     0 & 0 & 0 & 1 & 0 & 0\\
+     0 & 0 & 0 & 0 & 1 & 0\\
+     0 & 0 & 0 & 0 & 0 & 1\\
+\end{array}\right]
+$$
+\end{frame}
+
+
+\begin{frame}
+\large\frametitle{Seed Matrices: $Jv$ and $J^Tv$ products}
+\begin{itemize}
+    \item Numerical algorithms may only need $Jv$ and/or $J^Tv$ products
+    \item Can initialize $S$ or $W$ to $v$ and compute this product at a small multiple of function cost
+    \item AD tool may not support vector forward or vector reverse mode
+    \item Can iterate through columns of $S$ or $W$
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: Jacobian compression}
+Suppose the Jacobian is tridiagonal. That is,
+$$
+J = \left[ \begin{array}{cccccc}
+     a_{11} & a_{12} & 0 & 0 & 0 & 0\\
+     a_{21} & a_{22} & a_{23} & 0 & 0 & 0\\
+     0 & a_{32} & a_{33} & a_{34} & 0 & 0\\
+     0 & 0 & a_{43} & a_{44} & a_{45} & 0\\
+     0 & 0 & 0 & a_{54} & a_{55} & a_{56}\\
+     0 & 0 & 0 & 0 & a_{65} & a_{66}\\
+\end{array}\right]
+$$
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: Jacobian compression}
+Suppose the Jacobian is tridiagonal. Then, initializing the seed matrix $S$ to
+$$
+S = \left[ \begin{array}{ccc}
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 \\
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 
+\end{array}\right]
+$$
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: Jacobian compression}
+yields
+$$
+JS =
+\left[ \begin{array}{cccccc}
+     a_{11} & a_{12} & 0 & 0 & 0 & 0\\
+     a_{21} & a_{22} & a_{23} & 0 & 0 & 0\\
+     0 & a_{32} & a_{33} & a_{34} & 0 & 0\\
+     0 & 0 & a_{43} & a_{44} & a_{45} & 0\\
+     0 & 0 & 0 & a_{54} & a_{55} & a_{56}\\
+     0 & 0 & 0 & 0 & a_{65} & a_{66}\\
+\end{array}\right]
+\left[ \begin{array}{ccc}
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 \\
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 
+\end{array}\right]
+$$
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: Jacobian compression}
+yields
+{\small
+$$
+\left[ \begin{array}{cccccc}
+     a_{11} & a_{12} & 0 & 0 & 0 & 0\\
+     a_{21} & a_{22} & a_{23} & 0 & 0 & 0\\
+     0 & a_{32} & a_{33} & a_{34} & 0 & 0\\
+     0 & 0 & a_{43} & a_{44} & a_{45} & 0\\
+     0 & 0 & 0 & a_{54} & a_{55} & a_{56}\\
+     0 & 0 & 0 & 0 & a_{65} & a_{66}\\
+\end{array}\right]
+\left[ \begin{array}{ccc}
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 \\
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1 
+\end{array}\right] = 
+\left[ \begin{array}{ccc}
+     a_{11} & a_{12} & 0 \\
+     a_{21} & a_{22} & a_{23}\\
+     a_{34} & a_{32} & a_{33}\\
+     a_{44} & a_{45} & a_{43}\\
+     a_{54} & a_{55} & a_{56}\\
+     0      & a_{65} & a_{66}\\
+\end{array}\right]
+$$
+}
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: Jacobian compression}
+\begin{itemize}
+    \item We can compute a tridiagonal Jacobian using a seed matrix with 3 columns, independent of $N$
+    \item For general sparse $J$, we can perform a distance-2 coloring of the bipartite graph representing  $J$ to identify the \emph{structurally orthogonal} columns of $J$
+    \item Cost of computing the compressed Jacobian is proportional to the number of colors
+    \item Special colorings for sparsity arising from stencil-based discretizations
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\large\frametitle{Seed Matrices: Jacobian compression}
+\begin{itemize}
+    \item We can compute a tridiagonal Jacobian using a seed matrix with 3 columns, independent of $N$
+    \item Cost of computing the compressed Jacobian is proportional to the number of colors
+\end{itemize}
+
+{\small
+$$
+\left[ \begin{array}{cccccc}
+     \violet{a_{11}} & \blue{a_{12}} & 0 & 0 & 0 & 0\\
+     \violet{a_{21}} & \blue{a_{22}} & \green{a_{23}} & 0 & 0 & 0\\
+     0 & \blue{a_{32}} & \green{a_{33}} & \violet{a_{34}} & 0 & 0\\
+     0 & 0 & \green{a_{43}} & \violet{a_{44}} & \blue{a_{45}} & 0\\
+     0 & 0 & 0 & \violet{a_{54}} & \blue{a_{55}} & \green{a_{56}}\\
+     0 & 0 & 0 & 0 & \blue{a_{65}} & \green{a_{66}}\\
+\end{array}\right]
+\left[ \begin{array}{ccc}
+\violet{1} & 0 & 0 \\
+0 & \blue{1} & 0 \\
+0 & 0 & \green{1} \\
+\violet{1} & 0 & 0 \\
+0 & \blue{1} & 0 \\
+0 & 0 & \green{1} 
+\end{array}\right] =
+\left[ \begin{array}{ccc}
+     \violet{a_{11}} & \blue{a_{12}} & 0 \\
+     \violet{a_{21}} & \blue{a_{22}} & \green{a_{23}}\\
+     \violet{a_{34}} & \blue{a_{32}} & \green{a_{33}}\\
+     \violet{a_{44}} & \blue{a_{45}} & \green{a_{43}}\\
+     \violet{a_{54}} & \blue{a_{55}} & \green{a_{56}}\\
+     0      & \blue{a_{65}} & \green{a_{66}}\\
+\end{array}\right]
+$$
+}
+\end{frame}
+
+\end{document}
