@@ -2,6 +2,7 @@
 https://meetings.siam.org/sess/dsp_programsess.cfm?SESSIONCODE=79866
 
 **Organizers**: Jan Hückelheim, Sri Hari Krishna Narayanan
+**Co-Authors**: Laurent Hascoët, Paul Hovland
 
 ## What we will cover live
 | Content      | Resources |
